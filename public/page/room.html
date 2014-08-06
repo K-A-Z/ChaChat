@@ -1,0 +1,29 @@
+    <!--
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="active"><a href="#">Home</a></li>
+      <li><a href="#">Profile</a></li>
+      <li><a href="#">Messages</a></li>
+    </ul>
+    -->
+
+  <ol class="discussion">
+    <li class="{{message.speaker}}" ng-repeat="message in messages">
+      <div class="avatar">
+        <img src="./image/chat.png">
+      </div>
+      <div class="messages">
+        <p>{{message.text}}</p>
+        <div class="user">{{message.user}}</div><time>{{message.time}}</time>
+      </div>
+    </li>
+  </ol>
+
+<form ng-submit="sendMessage()">
+    <div class="input-group">
+        <input type="text" class="form-control" ng-model="newMessage" placeholder="message" id="query" name="query" value="">
+            <div class="input-group-btn">
+        <button type="submit" class="btn btn-success"><span class="glyphicon glyphicon-comment"></span>Send</button>
+        </div>
+    </div>
+</form>
+

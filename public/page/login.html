@@ -1,0 +1,16 @@
+<div class="col-sm-8 col-sm-offset-2">
+    <h1>Login ChaChat!</h1>
+    <form class="form-inline" ng-submit="login()">
+        <div class="panel panel-success">
+            <div class="panel-heading">Login</div>
+            <div class="panel-body">
+                <input type="text" class="form-control" placeholder="username" ng-model="username">
+                <input type="password" class="form-control" placeholder="password" ng-model="password">
+            </div>
+            <div class="panel-footer">
+            <button type="submit" class="btn btn-success" ng-disabled="disabled">Login</button>
+            <span class="text-danger" ng-show="alert">{{alert.msg}}</span>
+            </div>  
+        </div>
+    </form>
+</div>

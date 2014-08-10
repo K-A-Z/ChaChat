@@ -1,4 +1,4 @@
- var app = angular.module('chatApp', ['ngRoute']);
+var app = angular.module('chatApp', ['ngRoute']);
 
 app.config(function($routeProvider){
     $routeProvider
@@ -6,7 +6,7 @@ app.config(function($routeProvider){
             controller:'LoginController',
             templateUrl:'page/login.html'
         })
-        .when('/room/:room/',{
+        .when('/room',{
             controller:'ChatController',
             templateUrl:'page/room.html'
         })
@@ -15,19 +15,19 @@ app.config(function($routeProvider){
         });
 });
 
-app.run(function($rootScope, $location, $route, AuthService){
+app.run(function($rootScope, $location, $route, AuthService,RoomService){
     $rootScope.$on('$routeChangeStart',function(ev, next, current){
-        if(next.controller == 'LoginController')
+        if(next.controller === 'LoginController')
         {
             if (AuthService.isLogged())
             {
-                $location.path('/');
+                $location.path('/room');
                 $route.reload();
             }
         }
         else
         {
-            if (AuthService.isLogged() == false)
+            if (AuthService.isLogged() === false)
             {
                 $location.path('/');
                 $route.reload();
@@ -36,13 +36,13 @@ app.run(function($rootScope, $location, $route, AuthService){
     });
 });
 
-app.controller('LoginController', function($scope, $location, socket, AuthService){
+app.controller('LoginController', function($scope, $location, socket, AuthService, $rootScope){
     $scope.login = function(){
         $scope.disabled = true;
         AuthService.login($scope.username, $scope.password)
             .then(function(){
                 socket.emit('login',$scope.username);
-                $location.path('/room/lobby');
+                $location.path('/room');
             })
             .catch(function(){
                 $scope.alert = {msg:"Login failed"};
@@ -55,36 +55,37 @@ app.controller('LoginController', function($scope, $location, socket, AuthServic
     };
 });
 
-app.controller('ChatController', function($scope,$location,$anchorScroll,socket,AuthService,$routeParams) {
-    console.log($routeParams.room);
-    if ($routeParams.room != null){
-        socket.emit('join room',$routeParams.room);
-    }
+app.controller('ChatController', function($scope,$location,$anchorScroll,socket,AuthService,RoomService) {
+    console.log('chat controller');
+//    var activeRoom=null;
+//    console.log('active room is '+activeRoom);
     $scope.messages = [
-      {text:'Welcome to ChaChat!\r\nEnjoy!', speaker:'other', user:'system', time:'10min'}];
+        {text:'Welcome to ChaChat!\r\nEnjoy!', speaker:'other', user:'system', time:'10min'},
+        {text:RoomService.getActiveRoom(), speaker:'other', user:'room notificator', time:'10min'},
+    ];
 
      $scope.sendMessage = function() {
          var msgJson = JSON.stringify({
              text:$scope.newMessage,
              user:AuthService.getUser().username,
-             room:$routeParams.room,
+             room:RoomService.getActiveRoom(),
              time:new Date()
          });
          socket.emit('new message',msgJson);
          $scope.newMessage='';
          console.log(AuthService.getUser());
-            
+         console.log(RoomService.getActiveRoom());
     };
     socket.on('new message', function (message) {
         var msg = JSON.parse(message);
         var getspk = function(){
-            if (msg.user==AuthService.getUser().username){
+            if (msg.user===AuthService.getUser().username){
                 return 'self';
             }else{
                 return 'other';
-            };
+            }
         };
-        if (msg.room == $routeParams.room){
+        if (msg.room === RoomService.getActiveRoom()){
             $scope.messages.push({
                 text: msg.text,
                 speaker:getspk(),
@@ -97,18 +98,35 @@ app.controller('ChatController', function($scope,$location,$anchorScroll,socket,
         $location.hash('bottom');
         $anchorScroll();
     });
+    
+    $scope.$on('room change', function(event,message){
+        console.log('recived room change');
+        console.log(message);
+        if(message != ""){
+            console.log($scope.messages.length);
+            $scope.messages=[];
+            for (var i =0 ; i < $scope.messages.length ; i++){
+                console.log($scope.messages[i]);
+                $scope.messages[i].text='modified';
+                console.log($scope.messages[i]);
+
+            }   
+            socket.emit('join room',message);
+            activeRoom = message;
+        }
+    });
 });
 
-app.controller('RoomController', function($scope, socket, AuthService, $location){
+app.controller('RoomController', function($scope, socket, AuthService, $location,RoomService){
+    $scope.newroom=false;
     $scope.rooms=[];
-    $scope.$on('$routeChangeStart',function(){
-        console.log('routeChangeStart called');
-        $scope.sidebar = AuthService.isLogged();
-    });
+    socket.emit('room list');
     $scope.changeRoom = function(room){
         console.log('room chaged');
-        $location.path('/room/discussion');
-    }
+        console.log(room);
+        $scope.$emit('room change',room);
+        RoomService.setActiveRoom(room);
+    };
     socket.on('room list',function(message){
         console.log('room list recived');
         console.log(message);
@@ -119,6 +137,35 @@ app.controller('RoomController', function($scope, socket, AuthService, $location
             });
         }
     });
+    socket.on('add room',function(message){
+        console.log('add room recived');
+        console.log(message);
+        $scope.rooms.push({
+            name:message
+        });
+    });
+    $scope.createRoom = function(){
+        socket.emit('create room',$scope.roomName);
+        $scope.roomName = "";
+        $scope.newroom = false;
+    };
+    $scope.cancel = function(){
+        $scope.roomName = "";
+        $scope.newroom = false;
+    };
+        
+});
+
+
+
+app.factory('RoomService',function(){
+    var activeRoom = 'lobby';
+    return{
+        getActiveRoom: function(){return activeRoom;},
+        setActiveRoom: function(room){activeRoom = room;}
+        
+    };
+    
 });
 
 app.factory('AuthService',function($q,$timeout){
@@ -129,7 +176,7 @@ app.factory('AuthService',function($q,$timeout){
         login: function(username, password){
             var deferred = $q.defer();
             $timeout(function(){
-                if(username == password)
+                if(username === password)
                 {
                     _user = {username:username};
                      deferred.resolve();

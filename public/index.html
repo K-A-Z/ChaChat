@@ -7,29 +7,13 @@
     </head>
     <body>
 
-        <div class="container">
-            <!--
-            <div class="navbar navbar-inverse">
-              <a class="navbar-brand" href="#">GoChat!</a>
-            </div>
-            -->
-            <div class="row">
-                <div class="col-md-2 col-sm-2" ng-controller="RoomController" ng-show="sidebar" >
-                    <h2>Rooms</h2>
-                    <div ng-repeat="room in rooms">
-                        <a ng-click="changeRoom(room.name)">
-                            <div class="panel panel-info">{{room.name}}</div>
-                        </a>
-                    </div>
-                    <button class="btn btn-primary btn-xs" name="add_member"><span class="glyphicon glyphicon-plus"></span></button>
-                </div><!--col-md-2-->    
+        <div class="navbar navbar-inverse">
+          <a class="navbar-brand" href="#">ChaChat!</a>
+        </div>
 
-                <div class="col-md-8 col-sm-8" ng-controller="ChatController">
-                    <div ng-view></div>
-                </div><!--col-md-8-->
-                <div class="col-md-2 col-sm-2">
-                    
-                </div><!--col-md-2-->  
+        <div class="container">
+            <div class="row">
+                <div ng-view></div>
             </div><!--row-->    
         </div><!--container-->    
         <p id="bottom"></p>

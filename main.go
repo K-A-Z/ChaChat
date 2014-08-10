@@ -8,6 +8,10 @@ import (
 	"github.com/googollee/go-socket.io"
 )
 
+var (
+	rooms = []string{"lobby"}
+)
+
 func main() {
 	server, err := socketio.NewServer(nil)
 	if err != nil {
@@ -15,13 +19,29 @@ func main() {
 	}
 	server.On("connection", func(so socketio.Socket) {
 		log.Println("on connection")
-
+		so.Join("lobby")
 		so.On("login", func(msg string) {
-			log.Println(msg)
-			rooms := []string{"lobby", "discussion", "topic"} // so.Rooms()
+			log.Println("login:", msg)
+			if err := so.Join("lobby"); err != nil {
+				log.Println("join error:", err)
+			}
+		})
+
+		so.On("room list", func() {
+			log.Println("recived room list request ")
+
 			byteRooms, _ := json.Marshal(rooms)
-			log.Println(byteRooms)
+			log.Println(string(byteRooms))
 			so.Emit("room list", string(byteRooms))
+		})
+		so.On("create room", func(msg string) {
+			log.Println(msg)
+			if msg != "" {
+				log.Println("create room", msg)
+				rooms = append(rooms, msg)
+				so.Emit("add room", msg)
+				so.BroadcastTo("lobby", "add room", msg)
+			}
 		})
 
 		so.On("join room", func(msg string) {
@@ -37,7 +57,7 @@ func main() {
 				log.Println("json parse error:", err)
 			}
 			log.Println("emit:", so.Emit("new message", msg))
-			log.Println(msg)
+			log.Println("broadcast", msg, m.Room, so.Rooms())
 			log.Println("broadcast", so.BroadcastTo(m.Room, "new message", msg))
 		})
 
